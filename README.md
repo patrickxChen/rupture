@@ -47,7 +47,7 @@ sudo make install
 rupture ./your-program
 ```
 
-For the best experience, compile your program with debug info and no ASLR:
+For the best experience, compile your program like this so rupture can find function names:
 
 ```bash
 gcc -g -O0 -no-pie -o myapp myapp.c
@@ -91,9 +91,9 @@ rupture> quit
 
 ## Limitations
 
-- Linux x86-64 only
-- Compile your target with `-no-pie` — otherwise `break main` won't find the right address
-- Stripped binaries (`strip`) have no symbol names, so `break <name>` won't work on them
+- Linux only (x86-64)
+- If `break main` says "symbol not found", compile with `-g -no-pie` (see above)
+- If you've removed debug info from your binary, use `break 0x401234` with an address instead of a name
 
 ## What's planned
 
