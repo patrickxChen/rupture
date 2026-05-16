@@ -1,0 +1,12 @@
+# Build artifacts
+rupture
+tests/target
+*.o
+
+# Claude Code
+.claude/
+
+# Editor
+*.swp
+*~
+.DS_Store
