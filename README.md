@@ -1,116 +1,103 @@
 # rupture
 
-x86-64 Linux process debugger
+A terminal debugger for Linux programs. Set breakpoints, inspect registers, read memory, and step through code — all in a live terminal UI.
 
 ```
-┌─ registers ─────────────────────────────────────────────────────────┐
-│ rip  0x0000000000401234  rsp  0x00007ffd2e8c3f80  rbp  0x00007ffd2e8c3f90 │
-│ rax  0x0000000000000000  rbx  0x0000000000000000  rcx  0x0000000000000000 │
-│ rdx  0x00007ffd2e8c40a8  rdi  0x0000000000000001  rsi  0x00007ffd2e8c4098 │
-│ r8   0x0000000000000000  r9   0x0000000000000000  rflags 0x0000000000000246 │
-└─────────────────────────────────────────────────────────────────────┘
-┌─ disasm ────────────────────────────────────────────────────────────┐
-│ => 0x0000000000401234  push   rbp                                   │
-│    0x0000000000401235  mov    rbp, rsp                              │
-│    0x0000000000401238  sub    rsp, 0x10                             │
-│    0x000000000040123c  mov    dword ptr [rbp - 4], edi              │
-│    0x000000000040123f  mov    dword ptr [rbp - 8], esi              │
-└─────────────────────────────────────────────────────────────────────┘
-┌─ output ────────────────────────────────────────────────────────────┐
-│ rupture v0.1.0 — x86-64 Linux debugger                             │
-│ target: ./tests/target                                              │
-│ stopped: rip = 0x0000000000401234                                   │
-│ => breakpoint hit at 0x0000000000401280                             │
-└─────────────────────────────────────────────────────────────────────┘
+┌─ registers ────────────────────────────────────────────────────────────────┐
+│ rip  0x0000000000401136  rsp  0x00007ffd3c2a1b80  rbp  0x0000000000000000  │
+│ rax  0x0000000000000000  rbx  0x0000000000000000  rcx  0x0000000000000000  │
+│ rdx  0x0000000000000000  rdi  0x0000000000000001  rsi  0x00007ffd3c2a1c98  │
+│ r8   0x0000000000000000  r9   0x0000000000000000  rflags  0x0000000000000246│
+└────────────────────────────────────────────────────────────────────────────┘
+┌─ disasm ───────────────────────────────────────────────────────────────────┐
+│ => 0x0000000000401136  push   rbp                                          │
+│    0x0000000000401137  mov    rbp, rsp                                     │
+│    0x000000000040113a  sub    rsp, 0x10                                    │
+│    0x000000000040113e  mov    dword ptr [rbp - 4], edi                     │
+│    0x0000000000401141  mov    qword ptr [rbp - 0x10], rsi                  │
+└────────────────────────────────────────────────────────────────────────────┘
+┌─ output ───────────────────────────────────────────────────────────────────┐
+│ rupture v0.1.0 — x86-64 Linux debugger                                    │
+│ target: ./tests/target                                                     │
+│ => breakpoint hit at 0x0000000000401136                                    │
+└────────────────────────────────────────────────────────────────────────────┘
 rupture> _
 ```
 
 ## Install
 
-**Dependencies:** gcc, libncurses-dev, libcapstone-dev
+You need Linux (x86-64), gcc, and two libraries:
 
 ```bash
-# Ubuntu / Debian
-sudo apt-get install gcc libncurses-dev libcapstone-dev
-
-# Build and install
-make
-sudo make install
+sudo apt install gcc libncurses-dev libcapstone-dev
 ```
 
-Or use the provided script:
+Then build and install:
 
 ```bash
-bash install.sh
+git clone https://github.com/patrickxChen/rupture
+cd rupture
+make
+sudo make install
 ```
 
 ## Usage
 
 ```bash
-rupture ./your-binary
+rupture ./your-program
 ```
 
-Compile your targets with `-g -no-pie` for best results (absolute symbol addresses, debug info):
+For the best experience, compile your program with debug info and no ASLR:
 
 ```bash
-gcc -g -O0 -no-pie -o target target.c
+gcc -g -O0 -no-pie -o myapp myapp.c
+rupture ./myapp
 ```
 
-## Command Reference
+## Commands
 
-| Command               | Description                              |
-|-----------------------|------------------------------------------|
-| `help` / `h`          | Show this command table                  |
-| `quit` / `q`          | Exit rupture                             |
-| `regs` / `r`          | Print all registers                      |
-| `mem <addr> <n>`      | Hex dump n bytes at address (hex addr)   |
-| `x <addr> <n>`        | Alias for mem                            |
-| `break <addr\|sym>`   | Set breakpoint at address or symbol      |
-| `b <addr\|sym>`       | Alias for break                          |
-| `bl`                  | List all breakpoints                     |
-| `breakpoints`         | Alias for bl                             |
-| `bc <n>`              | Disable breakpoint n                     |
-| `continue` / `c`      | Continue execution                       |
-| `step` / `s`          | Single-step one instruction              |
-| `sym <name>`          | Look up symbol address in ELF            |
-| `syms`                | List all function symbols                |
+| Command | What it does |
+|---|---|
+| `break main` | Set a breakpoint at a function by name |
+| `break 0x401234` | Set a breakpoint at an address |
+| `continue` / `c` | Run until the next breakpoint |
+| `step` / `s` | Execute one instruction |
+| `regs` / `r` | Show all registers |
+| `mem 0x401000 64` | Dump 64 bytes of memory starting at an address |
+| `syms` | List all functions in the binary |
+| `sym main` | Look up the address of a specific function |
+| `bl` | List all breakpoints |
+| `bc 0` | Disable breakpoint #0 |
+| `quit` / `q` | Exit |
 
-## Architecture
+## Quick example
 
 ```
-rupture/
-├── include/
-│   ├── log.h          — log levels + pluggable backend
-│   ├── debugger.h     — core types and function declarations
-│   └── tui.h          — ncurses TUI function declarations
-├── src/
-│   ├── log.c          — log implementation
-│   ├── debugger.c     — process launch, wait, continue, step
-│   ├── registers.c    — PTRACE_GETREGS/SETREGS
-│   ├── memory.c       — PTRACE_PEEKDATA/POKEDATA, hex dump
-│   ├── breakpoint.c   — INT3 patching, enable/disable, step-over
-│   ├── elf_parser.c   — manual ELF .symtab parsing
-│   ├── tui.c          — ncurses TUI (capstone disasm)
-│   └── repl.c         — command dispatch
-├── tests/
-│   ├── target.c       — test binary with multiple functions
-│   └── Makefile
-└── main.c
+rupture> break main
+  main -> 0x0000000000401136
+  breakpoint set at 0x0000000000401136
+rupture> continue
+=> breakpoint hit at 0x0000000000401136
+rupture> step
+  stopped: rip = 0x0000000000401137
+rupture> regs
+  rip  0x0000000000401137  rsp  0x00007ffd3c2a1b78
+  ...
+rupture> mem 0x401136 32
+  0x0000000000401136  55 48 89 e5 48 83 ec 10  89 7d fc 48 89 75 f0 48  |UH..H....}.H.u.H|
+  ...
+rupture> quit
 ```
 
-**Core dependencies:**
-- `ptrace(2)` — Linux process control interface
-- `ncurses` — terminal windowing
-- `capstone` — x86-64 disassembly
+## Limitations
 
-## Roadmap
+- Linux x86-64 only
+- Compile your target with `-no-pie` — otherwise `break main` won't find the right address
+- Stripped binaries (`strip`) have no symbol names, so `break <name>` won't work on them
 
-- DWARF source-level debugging (`.debug_info`, `.debug_line`)
-- Hardware watchpoints via x86-64 debug registers (DR0–DR7)
-- Stack backtrace via `.eh_frame` unwinding
-- PIE/ASLR support via `/proc/pid/maps` load base detection
-- Command history via readline
+## What's planned
 
-## Platform
-
-Linux x86-64 only.
+- Show source code lines while stepping (requires `-g`)
+- Watchpoints (break when a variable changes)
+- Stack backtrace (`bt` command)
+- Command history with arrow keys

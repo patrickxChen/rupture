@@ -88,6 +88,7 @@ void tui_init(void)
     win_input  = newwin(1,           cols, rows - 1,                  0);
 
     scrollok(win_output, TRUE);
+    keypad(win_input, TRUE);
 
     log_set_backend(tui_log_backend);
 

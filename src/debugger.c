@@ -80,7 +80,7 @@ void dbg_wait(debugger_t *dbg)
         if (sig == SIGTRAP) {
             uint64_t rip = dbg_get_rip(dbg);
             breakpoint_t *bp = dbg_break_find(dbg, rip - 1);
-            if (bp) {
+            if (bp && bp->enabled) {
                 dbg_break_disable(dbg, bp);
                 dbg_set_rip(dbg, rip - 1);
                 bp->hit = true;
@@ -114,6 +114,15 @@ void dbg_continue(debugger_t *dbg)
         }
         int status;
         waitpid(dbg->pid, &status, 0);
+
+        if (!WIFSTOPPED(status)) {
+            if (WIFEXITED(status)) {
+                log_warn("process exited with code %d\n", WEXITSTATUS(status));
+                dbg->pid     = -1;
+                dbg->running = false;
+            }
+            return;
+        }
 
         for (int i = 0; i < dbg->bp_count; i++) {
             if (dbg->breakpoints[i].hit) {
